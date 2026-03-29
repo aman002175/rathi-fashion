@@ -1,3 +1,5 @@
+require('dotenv').config(); // 🔒 SECURITY SHIELD ON: Ye line sabse upar honi chahiye!
+
 const express = require('express');
 const mongoose = require('mongoose');
 const session = require('express-session');
@@ -7,11 +9,11 @@ const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const app = express();
 const PORT = 8080;
 
-// 1. CLOUDINARY CONFIG
+// 1. CLOUDINARY CONFIG (Keys ab .env secret file se aayengi)
 cloudinary.config({ 
-    cloud_name: 'dnpqrvmw1', 
-    api_key: '176978869326927', 
-    api_secret: 'idwAc9u5DFBozl_qwWhSSghiQHc' 
+    cloud_name: process.env.CLOUD_NAME, 
+    api_key: process.env.CLOUD_API_KEY, 
+    api_secret: process.env.CLOUD_API_SECRET 
 });
 
 const storage = new CloudinaryStorage({
@@ -21,16 +23,17 @@ const storage = new CloudinaryStorage({
 const upload = multer({ storage: storage });
 
 app.use(express.urlencoded({ extended: true }));
-app.use(session({ secret: 'rathi_elite_panda', resave: false, saveUninitialized: true }));
+app.use(session({ secret: process.env.SESSION_SECRET || 'rathi_elite_panda', resave: false, saveUninitialized: true }));
 
-// 2. DATABASE CONNECTION & SCHEMAS (Added Status for Inquiry)
-const dbURI = 'mongodb+srv://Aman_bishnoi:amanbishnoi0029@cluster0.honvagc.mongodb.net/?appName=Cluster0';
-mongoose.connect(dbURI).then(() => console.log('Rathi Fashion Master DB Connected! ✅'));
+// 2. DATABASE CONNECTION (Password ab .env secret file mein hai)
+const dbURI = process.env.MONGODB_URI;
+mongoose.connect(dbURI).then(() => console.log('Rathi Fashion Master DB Connected! ✅')).catch(err => console.log('DB Connection Error: ', err));
 
+// Models
 const Product = mongoose.model('Product', new mongoose.Schema({ name: String, price: String, img: String }));
 const Inquiry = mongoose.model('Inquiry', new mongoose.Schema({ 
     customerName: String, phone: String, itemName: String, 
-    status: { type: String, default: 'Pending' }, // NAYA FIELD: Solved mark karne ke liye
+    status: { type: String, default: 'Pending' }, 
     date: { type: Date, default: Date.now } 
 }));
 const Admin = mongoose.model('Admin', new mongoose.Schema({ username: {type:String, default:'admin'}, password: {type:String, default:'rathi123'} }));
@@ -38,7 +41,7 @@ const Admin = mongoose.model('Admin', new mongoose.Schema({ username: {type:Stri
 async function initAdmin() { if (!(await Admin.findOne())) await new Admin().save(); }
 initAdmin();
 
-// 3. MASTER STYLING (Animations + Fixes)
+// 3. MASTER STYLING (Animations, Glassy UI, Beating Heart)
 const style = `
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&family=Playfair+Display:wght@700&display=swap');
@@ -73,7 +76,7 @@ const style = `
     .login-box input:focus { outline: none; background: white; box-shadow: 0 0 15px rgba(255, 128, 171, 0.5); }
 
     /* Cards & Global UI */
-    .container { max-width: 1200px; margin: 40px auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; position: relative; z-index: 10; } /* Bug 1 Fixed: Removed -60px margin */
+    .container { max-width: 1200px; margin: 40px auto; padding: 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 30px; position: relative; z-index: 10; }
     .card { background: white; padding: 20px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center; border-bottom: 5px solid var(--pink); transition: transform 0.4s, box-shadow 0.4s; }
     .card:hover { transform: translateY(-12px); box-shadow: 0 15px 35px rgba(255, 128, 171, 0.2); }
     img { width: 100%; height: 260px; object-fit: cover; border-radius: 12px; }
@@ -97,12 +100,12 @@ const isAdmin = (req, res, next) => { if (req.session.isLoggedIn) next(); else r
 
 // --- ROUTES ---
 
-// 1. PUBLIC SITE
+// 1. PUBLIC SITE (No Admin Links, Full Animations, Custom Footer)
 app.get('/', async (req, res) => {
     const products = await Product.find();
     let delay = 0;
     let cards = products.map(p => {
-        delay += 0.1; // Animated delay effect
+        delay += 0.1;
         return `
         <div class="card animate-up" style="animation-delay: ${delay}s;">
             <img src="${p.img}" alt="collection">
@@ -165,12 +168,11 @@ app.post('/login', async (req, res) => {
     else res.send("<script>alert('Galat ID ya Password!'); window.location='/login';</script>");
 });
 
-// 3. ADMIN DASHBOARD (With Solve & Edit options)
+// 3. ADMIN DASHBOARD (With Solve & Edit Options)
 app.get('/admin', isAdmin, async (req, res) => {
     const products = await Product.find();
     const inquiries = await Inquiry.find().sort({ date: -1 });
     
-    // Inquiry UI Update
     let inquiryHTML = inquiries.map(i => {
         let isSolved = i.status === 'Solved';
         return `<div class="animate-up" style="background:white; padding:15px; margin-bottom:10px; border-left:5px solid ${isSolved ? 'var(--success)' : 'var(--pink)'}; border-radius:8px; box-shadow:0 2px 8px rgba(0,0,0,0.05); opacity:${isSolved ? '0.7' : '1'};">
@@ -185,7 +187,6 @@ app.get('/admin', isAdmin, async (req, res) => {
         </div>`;
     }).join('');
 
-    // Product UI Update (Added Edit Option)
     let productHTML = products.map(p => `<div class="animate-up" style="background:white; margin-bottom:15px; border-radius:10px; box-shadow:0 2px 5px rgba(0,0,0,0.03); overflow:hidden;">
         <div style="display:flex; justify-content:space-between; align-items:center; padding:15px;">
             <span><img src="${p.img}" style="width:40px; height:40px; border-radius:5px; vertical-align:middle; margin-right:10px;"> <b>${p.name}</b> - ${p.price}</span>
@@ -255,7 +256,7 @@ app.post('/add-product', isAdmin, upload.single('image'), async (req, res) => {
 app.post('/delete-product/:id', isAdmin, async (req, res) => { await Product.findByIdAndDelete(req.params.id); res.redirect('/admin'); });
 app.post('/submit-inquiry', async (req, res) => { await new Inquiry(req.body).save(); res.send("<html><body style='text-align:center; padding-top:100px; font-family:sans-serif;'><h1>Done! ✅</h1><p>Hamari team aapse jaldi contact karegi.</p><a href='/' style='color:#ff80ab; font-weight:bold; text-decoration:none;'>Wapas jayein</a></body></html>"); });
 
-// Profile routes remain same
+// Profile routes
 app.get('/admin/profile', isAdmin, (req, res) => res.send(`<html>${style}<body><div style="max-width:400px; margin:100px auto;" class="card animate-up"><h2>Profile Settings</h2><form action="/admin/update-profile" method="POST"><p style="text-align:left; font-size:0.8rem; color:red; font-weight:bold;">Confirm Identity:</p><input type="password" name="oldPassword" class="form-input" placeholder="Current Password" required><hr><p style="text-align:left; font-size:0.8rem; font-weight:bold;">New Details:</p><input name="newUsername" class="form-input" placeholder="New Username" required><input type="password" name="newPassword" class="form-input" placeholder="New Password" required><button class="btn" style="margin-top:15px;">Save New Credentials</button></form><br><a href="/admin" style="color:#aaa; text-decoration:none; font-weight:600;">← Cancel</a></div></body></html>`));
 app.post('/admin/update-profile', isAdmin, async (req, res) => {
     const admin = await Admin.findOne({ password: req.body.oldPassword });
